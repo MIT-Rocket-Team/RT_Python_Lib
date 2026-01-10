@@ -145,7 +145,16 @@ class rocket:
 
             #Parse barometer
             self.barometer = struct.unpack("<i", packet[20:23] + bytes([0x00]))[0]
-            self.temp = struct.unpack("<i", packet[23:26] + bytes([0x00]))[0]
+            raw_temp = struct.unpack("<i", packet[23:26] + bytes([0x00]))[0]
+            
+            C5 = 0x8405  # 33797
+            C6 = 0x6D91  # 28049
+
+            # Match C math exactly
+            dT = float(raw_temp) - (float(C5) * (1 << 8))
+            TEMP = 2000.0 + dT * float(C6) / float(1 << 23)
+
+            self.temp = TEMP / 100.0  # °C
             ##print("Baro Raw:", self.barometer)
             ##print("Temp Raw:", self.temp)
             

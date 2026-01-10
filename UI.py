@@ -253,7 +253,8 @@ class RocketUI(QWidget):
             "Baro Filtered Alt (m)": getattr(self.rocket, "barofilteredalt", ""),
             "Baro Max Alt (m)": getattr(self.rocket, "baro_max_alt", ""),
             "Roll (deg)": getattr(self.rocket, "roll_gyro_int", ""),
-            "Accel Integrated Velo (m/s)": getattr(self.rocket, "accel_integrated_velo", "")
+            "Accel Integrated Velo (m/s)": getattr(self.rocket, "accel_integrated_velo", ""),
+            "Temp (°C)": getattr(self.rocket, "temp", "")
         }
 
         self.telemetry_table.setRowCount(len(snapshot))
