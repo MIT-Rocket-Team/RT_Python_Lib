@@ -1,12 +1,26 @@
 import sys 
 import serial.tools.list_ports
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QComboBox, QMessageBox, QTableWidget, QTableWidgetItem, QLineEdit, QGroupBox
+    QApplication,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QGridLayout,
+    QLabel,
+    QPushButton,
+    QComboBox,
+    QMessageBox,
+    QTableWidget,
+    QTableWidgetItem,
+    QLineEdit,
+    QGroupBox,
+    QCheckBox
 )
 from PyQt5.QtCore import QTimer, Qt
 
 from PyQt5.QtGui import QColor
+
+from pointer import pointer
 
 # Import rocket class from rocket.py (must be in same folder)
 try:
@@ -21,6 +35,8 @@ class RocketUI(QWidget):
         super().__init__()
         self.setWindowTitle("Safe Rocket Telemetry UI")
         self.rocket = rocket()   # Do not open serial here
+        self.pointer = pointer()
+        self.tracking_enabled = False
         self.poll_timer = QTimer()
         self.poll_timer.setInterval(POLL_MS)
         self.poll_timer.timeout.connect(self.poll_telemetry)
@@ -125,6 +141,36 @@ class RocketUI(QWidget):
         servo_group.setLayout(servo_layout)
         left_layout.addWidget(servo_group)
 
+        # --- Pointer Control ---
+        pointer_group = QGroupBox("Pointer Control")
+        grid = QGridLayout()
+
+        self.btn_up = QPushButton("↑")
+        self.btn_down = QPushButton("↓")
+        self.btn_left = QPushButton("←")
+        self.btn_right = QPushButton("→")
+        self.btn_zero = QPushButton("ZERO")
+
+        self.btn_up.clicked.connect(lambda: self.pointer_cmd("up"))
+        self.btn_down.clicked.connect(lambda: self.pointer_cmd("down"))
+        self.btn_left.clicked.connect(lambda: self.pointer_cmd("left"))
+        self.btn_right.clicked.connect(lambda: self.pointer_cmd("right"))
+        self.btn_zero.clicked.connect(lambda: self.pointer_cmd("zero"))
+
+        grid.addWidget(self.btn_up,    0, 1)
+        grid.addWidget(self.btn_left,  1, 0)
+        grid.addWidget(self.btn_zero,  1, 1)
+        grid.addWidget(self.btn_right, 1, 2)
+        grid.addWidget(self.btn_down,  2, 1)
+
+        # Tracking toggle
+        self.track_toggle = QCheckBox("Tracking ON")
+        self.track_toggle.stateChanged.connect(self.toggle_tracking)
+        grid.addWidget(self.track_toggle, 3, 0, 1, 3)
+
+        pointer_group.setLayout(grid)
+        left_layout.addWidget(pointer_group)
+
         # --- Poll / Log controls ---
         pl_row = QHBoxLayout()
         self.poll_btn = QPushButton("Start Polling")
@@ -138,6 +184,23 @@ class RocketUI(QWidget):
 
         left_layout.addLayout(pl_row)
 
+    def pointer_cmd(self, direction):
+        if self.pointer is None:
+            QMessageBox.warning(self, "Pointer", "Pointer not connected")
+            return
+
+        try:
+            getattr(self.pointer, direction)()
+            self.status_label.setText(f"Pointer {direction}")
+        except Exception as e:
+            QMessageBox.critical(self, "Pointer Error", str(e))
+
+    def toggle_tracking(self, state):
+        self.tracking_enabled = state == Qt.Checked
+        self.status_label.setText(
+            "Tracking enabled" if self.tracking_enabled else "Tracking disabled"
+        )
+    
     # -------------------------
     # Port management
     # -------------------------
@@ -227,6 +290,15 @@ class RocketUI(QWidget):
     # Telemetry polling
     # -------------------------
     def poll_telemetry(self):
+        if self.tracking_enabled:
+            try:
+                rocket_lat = getattr(self.rocket, "lat", None)
+                rocket_lon = getattr(self.rocket, "lon", None)
+                rocket_alt = getattr(self.rocket, "gpsalt", None)
+                azimuth, elevation = self.pointer.calc_angles(rocket_lat, rocket_lon, rocket_alt)
+                self.pointer.send_angles(azimuth, elevation)
+            except Exception as e:
+                self.status_label.setText(f"Pointer tracking error: {e}")
         try:
             ok = False
             if hasattr(self.rocket, "telemetry_downlink_update"):
@@ -256,6 +328,8 @@ class RocketUI(QWidget):
             "Accel Integrated Velo (m/s)": getattr(self.rocket, "accel_integrated_velo", ""),
             "Temp (°C)": getattr(self.rocket, "temp", "")
         }
+
+
 
         self.telemetry_table.setRowCount(len(snapshot))
         for row, (k, v) in enumerate(snapshot.items()):
