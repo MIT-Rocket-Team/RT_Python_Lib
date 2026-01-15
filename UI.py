@@ -294,9 +294,12 @@ class RocketUI(QWidget):
             try:
                 rocket_lat = getattr(self.rocket, "lat", None)
                 rocket_lon = getattr(self.rocket, "lon", None)
+                rocket_fix = getattr(self.rocket, "gps_fix", 0)
                 rocket_alt = getattr(self.rocket, "barofilteredalt", None)
-                azimuth, elevation = self.pointer.calc_angles(rocket_lat, rocket_lon, rocket_alt)
-                self.pointer.send_angles(azimuth, elevation)
+                azimuth, elevation = self.pointer.calc_angles(rocket_fix, rocket_lat, rocket_lon, rocket_alt)
+                if rocket_fix:
+                    self.pointer.send_angles(azimuth, elevation)
+
             except Exception as e:
                 self.status_label.setText(f"Pointer tracking error: {e}")
         try:

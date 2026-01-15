@@ -2,26 +2,28 @@ import math
 import serial
 import struct
 
-gps_lat = 0
-gps_long = 0
+gps_lat = 42.360370
+gps_long = -71.093554
 
 class pointer:
-    def __init__(self, port="COM10", baud=115200):
+    def __init__(self, port="COM11", baud=115200):
         self.port = port
         self.baud = baud
         self.ser = serial.Serial(self.port, self.baud, timeout=0.1)
         self.gps_lat = gps_lat
         self.gps_long = gps_long
 
-    def calc_angles(self, rocket_lat, rocket_long, rocket_alt):
+    def calc_angles(self, rocket_fix, rocket_lat, rocket_long, rocket_alt):
         try:
             ground_station_distance = math.sqrt((rocket_lat - self.gps_lat)**2 + (rocket_long - self.gps_long)**2) * 111100
+            print(f"Ground Distance: {ground_station_distance} meters")
             elevation_target = math.atan(rocket_alt/ground_station_distance) * (180 / math.pi) #degrees -90 to 90
             azimuth_target = math.atan2((rocket_long - self.gps_long), (rocket_lat - self.gps_lat)) * (180 / math.pi) #degrees -180 to 180
             azimuth_target = (azimuth_target + 360) % 360  #convert to 0-360 degrees
         except:
             elevation_target = 0
             azimuth_target = 0
+        print(f"Azimuth: {azimuth_target}, Elevation: {elevation_target}")
         return azimuth_target, elevation_target
 
     
@@ -33,6 +35,9 @@ class pointer:
         struct.pack_into('<f', data, 6, elevation)
         data[10] = self.calc_checksum(data)
         self.ser.write(data)
+        if self.ser.in_waiting:
+            response = self.ser.read(self.ser.in_waiting)
+            print(response)
 
     def calc_checksum(self, data):
         chksum = 0
