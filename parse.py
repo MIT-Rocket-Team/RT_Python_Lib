@@ -18,6 +18,7 @@ headers = [
 
 # === LOAD & PREPARE ===
 df = pd.read_csv(filename, names=headers)
+df = pd.read_csv(filename, names=headers,skiprows=1)
 
 # Parse vector-like columns
 for col in ["accelerometer", "gyro", "magnetometer", "servos"]:
