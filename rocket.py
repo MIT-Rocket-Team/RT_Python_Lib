@@ -61,6 +61,19 @@ class rocket:
         self.logging = True
         self.file = open(f"telemetry_{time.time()}.csv", "w", newline='')
         self.csv_writer = csv.writer(self.file)
+        header = [
+                    "time", "pyrostat", "servostat", "accel", "barometer",
+                    "baro_alt_filtered", "baro_vel_filtered", "temp", "gyro",
+                    "magnetometer", "heading", "gps_fix_status", "lat", "lon", "gpsalt",
+                    "pdop", "hdop", "vdop", "flight_time", "last_rec",
+                    "yaw_gyro_int", "pitch_gyro_int", "roll_gyro_int",
+                    "batt_voltage", "rocket_state", "pktnum", "rssi",
+                    "armed_pyros", "fired_pyros", "badpackets", "rxrssi",
+                    "accel_integrated_velo", "baro_max_alt", "gps_max_alt"
+                ]
+        self.csv_writer.writerow(header)
+        self.file.flush()
+        os.fsync(self.file.fileno())
 
     def log_data_stop(self):
         self.logging = False

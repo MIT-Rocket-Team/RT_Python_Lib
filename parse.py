@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import ast
 
 # === CONFIG ===
-filename = "XANTHUS_DATA.csv"
+filename = "Roll_Control_Test_1_14.csv"
 
 headers = [
     "time", "pyros", "servos", "accelerometer", "barometer",
@@ -18,6 +18,7 @@ headers = [
 
 # === LOAD & PREPARE ===
 df = pd.read_csv(filename, names=headers)
+df = pd.read_csv(filename, names=headers,skiprows=1)
 
 # Parse vector-like columns
 for col in ["accelerometer", "gyro", "magnetometer", "servos"]:
@@ -28,6 +29,11 @@ for col in ["accelerometer", "gyro", "magnetometer", "servos"]:
 df["accel_x"] = df["accelerometer"].apply(lambda a: a[0] if isinstance(a, list) else None)
 df["accel_y"] = df["accelerometer"].apply(lambda a: a[1] if isinstance(a, list) else None)
 df["accel_z"] = df["accelerometer"].apply(lambda a: a[2] if isinstance(a, list) else None)
+
+# --- Add gyro components ---
+df["gyro_x"] = df["gyro"].apply(lambda g: g[0] if isinstance(g, list) else None)
+df["gyro_y"] = df["gyro"].apply(lambda g: g[1] if isinstance(g, list) else None)
+df["gyro_z"] = df["gyro"].apply(lambda g: g[2] if isinstance(g, list) else None)
 
 # --- Add servo channels (servo_0 .. servo_7) ---
 for i in range(8):
